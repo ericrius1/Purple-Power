@@ -22,7 +22,7 @@ package
 		private static const SHIP_SPEED_PERCENT:Number = 0.75; // Screen width percent per second
 		private static const ENEMY_SPEED_PERCENT:Number = .1; // Screen width percent per second
 		private static const LASER_COOLDOWN : Number = 0.1;
-		private static const LASER_SPEED_PERCENT:Number = 4.0; //traverse 4 screens in one second
+		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _initialWidth : int;
 		
 		private var _playerShip:PlayerShip;
@@ -30,9 +30,13 @@ package
 		private var _numShips:int = 5;
 		private var _explosion:Explosion;
 		private var _explosionFrame:Number;
+		private var _enemyKillCount:int = 0;
+		private var _poweredUp:Boolean = false;
+		private var _enemyKillsToPowerUp:int = 5;
 		
 		private var _starField: StarField;
 		private var _lasers   : Vector.<Laser>
+		private var _laserSound:LaserSound 
 		
 		
 		private var _lastTime:int
@@ -88,6 +92,8 @@ package
 			_explosion = new Explosion();
 			_explosion.gotoAndStop(1);
 			
+			_laserSound = new LaserSound();
+			
 			_lasers = new <Laser> [];
 			_laserShootFuse = 0;
 			mouseEnabled = true;
@@ -124,15 +130,12 @@ package
 		
 		private function onMouseDown(event:MouseEvent) : void
 		{
-			stage.addEventListener(MouseEvent.MOUSE_MOVE, onMouseMove);
+	
 			stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
 			_mouseDown = true;
 		}
 		
 
-		private function onMouseMove(event:MouseEvent) : void
-		{
-		}
 		
 		private function onMouseUp(event:MouseEvent) : void
 		{
@@ -157,6 +160,16 @@ package
 			_starField.update(deltaTime);
 			updateEnemyShips(deltaTime);
 			updateLasers(deltaTime);
+			
+			if(_enemyKillCount > 1)
+			{
+				_poweredUp = true;
+			}
+			
+			if(_poweredUp)
+			{
+				//Do something cool
+			}
 		}
 		
 		private function updateShip(deltaTime:Number) : void
@@ -212,6 +225,7 @@ package
 				
 				addChildAt(temp_laser, getChildIndex(_playerShip));
 				_lasers.push(temp_laser);
+				_laserSound.play();
 			}
 			var speed:Number = stage.stageHeight * LASER_SPEED_PERCENT;
 			for (var i:int = _lasers.length-1; i >=0; --i)
@@ -236,6 +250,7 @@ package
 						_explosionFrame = 0;
 						removeChild(enemyShip);
 						_enemyShips.splice(j, 1);
+						_enemyKillCount++;
 						enemyShip = null;
 					}
 				}
@@ -248,18 +263,7 @@ package
 				}	
 			}
 		}
-//		
-//		protected function onExplosionEnterFrame(event:Event):void
-//		{
-//	
-//			if(_explosion.currentFrame == _explosion.totalFrames)
-//			{
-//				_explosion.stop();
-//				removeChild(_explosion);
-//				_explosion.removeEventListener(Event.ENTER_FRAME, onExplosionEnterFrame);
-//			}	
-//		}
-		
+
 		private function updateEnemyShips(deltaTime:Number) : void 
 		{
 			for(var i:int = 0; i < _enemyShips.length; i++)
@@ -278,7 +282,7 @@ package
 					{
 						_explosion.stop();
 						removeChild(_explosion);
-						//_explosion.goToAndStop(1);
+						_explosion.goToAndStop(1);
 	
 					}	
 					else
