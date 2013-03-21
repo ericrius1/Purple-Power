@@ -26,7 +26,8 @@ package
 		private var _initialWidth : int;
 		
 		private var _playerShip:PlayerShip;
-		private var _enemyShip:EnemyShip;
+		private var _enemyShips:Vector.<EnemyShip>;
+		private var _numShips:int = 5;
 		private var _explosion:Explosion;
 		private var _explosionFrame:Number;
 		
@@ -81,14 +82,8 @@ package
 			addChild(_starField);
 			addChild(_playerShip);
 			
-			_enemyShip = new EnemyShip();
-			_enemyShip.width = targetWidth;
-			_enemyShip.scaleY = _enemyShip.scaleX; //match scale x and scale y to maintain aspect ratio
-			_enemyShip.x = stage.stageWidth * 0.2;
-			_enemyShip.y = stage.stageHeight * 0.5;
-			
-			_enemyShip.y = 100;
-			addChild(_enemyShip);
+			createEnemyShips();
+		
 			
 			_explosion = new Explosion();
 			_explosion.gotoAndStop(1);
@@ -104,6 +99,27 @@ package
 			_mouseDown = false;
 
 			return true;
+		}
+		
+		private function createEnemyShips():void
+		{
+			var targetWidth:Number = stage.stageWidth * 0.15;
+			_enemyShips = new Vector.<EnemyShip>();
+			for(var i:int = 0; i < _numShips; i++)
+			{
+				var enemyShip:EnemyShip = new EnemyShip();
+				
+				
+				enemyShip.width = targetWidth;
+				enemyShip.scaleY = enemyShip.scaleX; //match scale x and scale y to maintain aspect ratio
+				enemyShip.x = stage.stageWidth * 0.2 * i;
+				enemyShip.y = stage.stageHeight * 0.5;
+				
+				enemyShip.y = 100;
+				_enemyShips.push(enemyShip);
+				addChild(enemyShip);
+			}
+			
 		}
 		
 		private function onMouseDown(event:MouseEvent) : void
@@ -139,7 +155,7 @@ package
 		{
 			updateShip(deltaTime);
 			_starField.update(deltaTime);
-			updateEnemyShip(deltaTime);
+			updateEnemyShips(deltaTime);
 			updateLasers(deltaTime);
 		}
 		
@@ -208,17 +224,20 @@ package
 				//build a swept rectangle
 				
 				laserRect = laserRect.union(laser.getRect(this));
-				if(_enemyShip &&laserRect.intersects(_enemyShip.getRect(this)))
+				
+				for (var j:int = _enemyShips.length-1; j >=0; j--)
 				{
-					_explosion.x = _enemyShip.x;
-					_explosion.y = _enemyShip.y;
-					addChild(_explosion);
-					_explosionFrame = 0;
-					removeChild(_enemyShip);
-					_enemyShip = null;
-					
-
-					
+					var enemyShip:EnemyShip = _enemyShips[j];
+					if(enemyShip &&laserRect.intersects(enemyShip.getRect(this)))
+					{
+						_explosion.x = enemyShip.x;
+						_explosion.y = enemyShip.y;
+						addChild(_explosion);
+						_explosionFrame = 0;
+						removeChild(enemyShip);
+						_enemyShips.splice(j, 1);
+						enemyShip = null;
+					}
 				}
 				//remove laser from display list 
 				if(laser.y< -laser.height)
@@ -241,28 +260,31 @@ package
 //			}	
 //		}
 		
-		private function updateEnemyShip(deltaTime:Number) : void 
+		private function updateEnemyShips(deltaTime:Number) : void 
 		{
-			if(_enemyShip)
+			for(var i:int = 0; i < _enemyShips.length; i++)
 			{
-			
-				var speed:Number = stage.stageWidth * ENEMY_SPEED_PERCENT;
-				_enemyShip.x +=speed * deltaTime;
-			}
-			
-			else if(_explosion.parent)
-			{
-				_explosionFrame += 60 * deltaTime;
-				if(int(_explosionFrame) > _explosion.totalFrames)
+				if(_enemyShips[i])
 				{
-					_explosion.stop();
-					removeChild(_explosion);
-					//_explosion.goToAndStop(1);
-
-				}	
-				else
+				
+					var speed:Number = stage.stageWidth * ENEMY_SPEED_PERCENT;
+					_enemyShips[i].x +=speed * deltaTime;
+				}
+				
+				else if(_explosion.parent)
 				{
-					_explosion.gotoAndStop(int(_explosionFrame));
+					_explosionFrame += 60 * deltaTime;
+					if(int(_explosionFrame) > _explosion.totalFrames)
+					{
+						_explosion.stop();
+						removeChild(_explosion);
+						//_explosion.goToAndStop(1);
+	
+					}	
+					else
+					{
+						_explosion.gotoAndStop(int(_explosionFrame));
+					}
 				}
 			}
 		}
