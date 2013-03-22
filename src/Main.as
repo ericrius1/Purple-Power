@@ -29,10 +29,12 @@ package
 		private var _initialWidth : int;
 		
 		private var _playerShip:PlayerShip;
+		private var _playerHitSound:PlayerHitSound;
+		
 		private var _enemyShips:Vector.<EnemyShipClass>;
-		private var _numShips:int = 20;
+		private var _numShips:int = 10;
 		private var _numShipsToSpawn:int = 2;
-		private var _maxShips:int = _numShips +1;
+		private var _maxShips:int = _numShips *2;
 		private var _minShips:int = _numShips * 0.3;
 		private var _spawnShips:Boolean = true;
 		
@@ -104,6 +106,7 @@ package
 		
 			
 			_laserSound = new LaserSound();
+			_playerHitSound = new PlayerHitSound();
 		
 			
 			_lasers = new <Laser> [];
@@ -124,8 +127,11 @@ package
 		{
 	
 				var enemyShip:EnemyShipClass = new EnemyShipClass(x,y, stage.stageWidth, stage.stageHeight);
+		
 				addChild(enemyShip.GetShip());
+				addChild(enemyShip.GetLaser());
 				_enemyShips.push(enemyShip);
+				//addChild(new EnemyLaser());
 			
 		}
 		
@@ -198,7 +204,26 @@ package
 				else
 					_playerShip.y +=deltaY;
 			
+				//Check if player has been hit
+				for (var j:int = _enemyShips.length-1; j >=0; j--)
+				{
+					var enemyShip:EnemyShipClass = _enemyShips[j];
+					var enemyLaserRect:Rectangle = enemyShip.GetLaser().getRect(this);
+					
+					//Check if player is hit by enemy
+					if(_playerShip.getRect(this).intersects(enemyLaserRect))
+					{
+						trace("BOOOM:   "   + deltaTime);
+						_playerHitSound.play();
+						if(enemyShip.GetLaser().parent)
+						{
+							removeChild(enemyShip.GetLaser());
+						}
+							
+					}
+				}
 		}
+	
 		
 		private function updateLasers(deltaTime:Number) : void
 		{
@@ -242,14 +267,15 @@ package
 				for (var j:int = _enemyShips.length-1; j >=0; j--)
 				{
 					var enemyShip:EnemyShipClass = _enemyShips[j];
+					
+					//Check if enemy is hit by laser
 					if(!enemyShip.IsExploding() && enemyShip.HitByLaser(laserRect))
 					{
 						addChild(enemyShip.GetExplosion());
 						enemyShip.GetShip().visible = false;
+						enemyShip.GetLaser().visible = false;
 						_enemyKillCount++;
-
 					}
-					
 				}
 				//remove laser from display list 
 				if(laser.y< -laser.height)
@@ -292,6 +318,8 @@ package
 				if(_enemyShips[i].IsDead())
 				{
 					removeChild(_enemyShips[i].GetShip());
+					if(_enemyShips[i].GetLaser().parent)
+						removeChild(_enemyShips[i].GetLaser());
 					if(_enemyShips[i].GetExplosion().parent)
 						removeChild(_enemyShips[i].GetExplosion());
 					_enemyShips.splice(i, 1)
@@ -301,7 +329,7 @@ package
 					if(_enemyShips.length <_minShips && _spawnShips == true)
 					{
 						var numShipsToSpawn:int = Math.random() * 5;
-						if(Math.random() < 0.8)
+						if(Math.random() < 0.5)
 						{
 							_minShips++;
 							_numShipsToSpawn++;
