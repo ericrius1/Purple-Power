@@ -30,6 +30,8 @@ package
 		private var _numShips:int = 5;
 		private var _explosion:Explosion;
 		private var _explosionFrame:Number;
+		private var  _explosionSound:ExplosionSound;
+		
 		private var _enemyKillCount:int = 0;
 		private var _poweredUp:Boolean = false;
 		private var _enemyKillsToPowerUp:int = 5;
@@ -93,6 +95,7 @@ package
 			_explosion.gotoAndStop(1);
 			
 			_laserSound = new LaserSound();
+			_explosionSound = new ExplosionSound();
 			
 			_lasers = new <Laser> [];
 			_laserShootFuse = 0;
@@ -246,7 +249,8 @@ package
 					{
 						_explosion.x = enemyShip.x;
 						_explosion.y = enemyShip.y;
-						addChild(_explosion);
+						_explosionSound.play();
+						addChild(_explosion);	
 						_explosionFrame = 0;
 						removeChild(enemyShip);
 						_enemyShips.splice(j, 1);
