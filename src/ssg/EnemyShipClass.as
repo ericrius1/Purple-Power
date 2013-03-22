@@ -12,12 +12,13 @@ package ssg
 		private var  _explosionSound:ExplosionSound;
 		private var _enemyShip:EnemyShip;
 		private var _stageWidth:Number;
+		private var _stageHeight:Number;
 		private var _speed:Number;
 		private var _direction:int = 1;
 	    private var _isExploding:Boolean = false;
 		private var _isDead:Boolean = false;
 		
-		public function EnemyShipClass(x:Number, y:Number, stageWidth:Number)
+		public function EnemyShipClass(x:Number, y:Number, stageWidth:Number, stageHeight:Number)
 		{
 			//var targetWidth:Number = stage.stageWidth * 0.15;
 			_explosion = new Explosion();
@@ -29,14 +30,22 @@ package ssg
 			_enemyShip.x =x
 			_enemyShip.y = y
 			
-			_enemyShip.y = 100;
 			
 			_stageWidth = stageWidth;
+			_stageHeight = stageHeight;
 			_speed = _stageWidth * ENEMY_SPEED_PERCENT;
+			
+			if(Math.random()>0.5)_direction=-1;
 			
 		}
 		public function Update(deltaTime:Number):void
 		{
+			if(_enemyShip.y > _stageHeight)
+			{
+				_isDead = true;
+				return;
+			}
+			
 			if(_isExploding)
 			{
 				_explosionFrame += 60 * deltaTime;
@@ -56,9 +65,11 @@ package ssg
 			}
 			
 			_enemyShip.x+= _speed * deltaTime * _direction;
+			_enemyShip.y+=_speed * deltaTime * 0.3;
 			if(_enemyShip.x > _stageWidth || _enemyShip.x < 0){
 				_direction *= -1;
 			}
+			
 		}
 		
 		public function HitByLaser(laserRect:Rectangle):Boolean

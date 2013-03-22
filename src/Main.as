@@ -11,8 +11,10 @@ package
 	import flash.geom.Rectangle;
 	import flash.utils.getTimer;
 	
-	import ssg.StarField;
+	import ssg.BossShip;
 	import ssg.EnemyShipClass;
+	import ssg.StarField;
+	import ssg.SuperEnemyShipClass;
 	
 	//This sprite is right on top of our application level, so this is where we can do all our drawing
 	//stage is on top of application
@@ -22,19 +24,27 @@ package
 	{
 		private static const SHIP_SPEED_PERCENT:Number = 0.75; // Screen width percent per second
 	
-		private static const LASER_COOLDOWN : Number = .2;
+		private static const LASER_COOLDOWN : Number = .3;
 		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _initialWidth : int;
 		
 		private var _playerShip:PlayerShip;
 		private var _enemyShips:Vector.<EnemyShipClass>;
-		private var _numShips:int = 5;
-	
+		private var _numShips:int = 20;
+		private var _numShipsToSpawn:int = 2;
+		private var _maxShips:int = _numShips +1;
+		private var _minShips:int = _numShips * 0.3;
+		private var _spawnShips:Boolean = true;
+		
+		private var _bossMode:Boolean = false;
+		private var _bossShip:BossShip;
 		
 		private var _enemyKillCount:int = 0;
 		private var _poweredUp:Boolean = false;
 		private var _enemyKillsToPowerUp:int = 5;
 		
+
+
 		private var _starField: StarField;
 		private var _lasers   : Vector.<Laser>
 		private var _laserSound:LaserSound 
@@ -82,9 +92,9 @@ package
 			_playerShip.y = stage.stageHeight * 0.9;
 			
 			_enemyShips = new <EnemyShipClass> [];
-			for(var i:int = 0; i < 5; i++)
+			for(var i:int = 0; i < _numShips; i++)
 			{
-				createEnemyShip(stage.stageWidth * 0.2 * i, stage.stageHeight * 0.5);
+				createEnemyShip(stage.stageWidth * (1/_numShips) * i, 100 + i*_playerShip.height * .2);
 			}
 			
 			_starField = new StarField();
@@ -113,7 +123,7 @@ package
 		private function createEnemyShip(x:Number, y:Number):void
 		{
 	
-				var enemyShip:EnemyShipClass = new EnemyShipClass(x,y, stage.stageWidth);
+				var enemyShip:EnemyShipClass = new EnemyShipClass(x,y, stage.stageWidth, stage.stageHeight);
 				addChild(enemyShip.GetShip());
 				_enemyShips.push(enemyShip);
 			
@@ -149,7 +159,10 @@ package
 		{
 			updateShip(deltaTime);
 			_starField.update(deltaTime);
-			updateEnemyShips(deltaTime);
+			if(!_bossMode)
+				updateEnemyShips(deltaTime);
+			else
+				updateBoss(deltaTime);
 			updateLasers(deltaTime);
 			
 		}
@@ -184,9 +197,6 @@ package
 					_playerShip.y = shipTargetY;
 				else
 					_playerShip.y +=deltaY;
-				
-					
-
 			
 		}
 		
@@ -221,7 +231,14 @@ package
 				
 				laserRect = laserRect.union(laser.getRect(this));
 	
-
+				if(_bossMode == true)
+				{
+					if(_bossShip.HitByLaser(laserRect))
+					{
+						// do something with laser?
+					}
+				
+				}
 				for (var j:int = _enemyShips.length-1; j >=0; j--)
 				{
 					var enemyShip:EnemyShipClass = _enemyShips[j];
@@ -230,7 +247,7 @@ package
 						addChild(enemyShip.GetExplosion());
 						enemyShip.GetShip().visible = false;
 						_enemyKillCount++;
-					
+
 					}
 					
 				}
@@ -243,17 +260,57 @@ package
 				}	
 			}
 		}
+		
+		private function SpawnBoss():void
+		{
+			_bossShip = new BossShip(stage.stageWidth, stage.stageHeight);
+		  	addChild(_bossShip.GetShip());
+			_bossMode = true;
+		}
+		
+		private function updateBoss(deltaTime:Number):void
+		{
+			if(_bossShip ==  null)
+			{
+				SpawnBoss();
+			}
+			_bossShip.Update(deltaTime);
+			
+		}
 
 		private function updateEnemyShips(deltaTime:Number) : void 
 		{
+			//We have killed all the normal ships, now lets bring on the boss!
+			if(_spawnShips == false&& _enemyShips.length == 0)
+			{
+				SpawnBoss();
+				return;
+			}
 			
 			for(var i:int = 0; i < _enemyShips.length; i++)
 			{
 				if(_enemyShips[i].IsDead())
 				{
 					removeChild(_enemyShips[i].GetShip());
-					removeChild(_enemyShips[i].GetExplosion());
+					if(_enemyShips[i].GetExplosion().parent)
+						removeChild(_enemyShips[i].GetExplosion());
 					_enemyShips.splice(i, 1)
+				
+					if(_enemyShips.length > _maxShips)
+						_spawnShips = false;
+					if(_enemyShips.length <_minShips && _spawnShips == true)
+					{
+						var numShipsToSpawn:int = Math.random() * 5;
+						if(Math.random() < 0.8)
+						{
+							_minShips++;
+							_numShipsToSpawn++;
+						}
+						for(var j:int = 0; j <numShipsToSpawn * Math.random() +1; j++)
+						{	
+							createEnemyShip(Math.random() * stage.stageWidth ,  -_playerShip.height * .5);
+						}
+					}
 					continue;
 				}
 				_enemyShips[i].Update(deltaTime);
