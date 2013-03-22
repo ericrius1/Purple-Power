@@ -22,7 +22,7 @@ package
 	{
 		private static const SHIP_SPEED_PERCENT:Number = 0.75; // Screen width percent per second
 	
-		private static const LASER_COOLDOWN : Number = 0.1;
+		private static const LASER_COOLDOWN : Number = .2;
 		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _initialWidth : int;
 		
@@ -82,7 +82,10 @@ package
 			_playerShip.y = stage.stageHeight * 0.9;
 			
 			_enemyShips = new <EnemyShipClass> [];
-			createEnemyShip();
+			for(var i:int = 0; i < 5; i++)
+			{
+				createEnemyShip(stage.stageWidth * 0.2 * i, stage.stageHeight * 0.5);
+			}
 			
 			_starField = new StarField();
 			addChild(_starField);
@@ -106,10 +109,11 @@ package
 			return true;
 		}
 		
-		private function createEnemyShip():void
+		
+		private function createEnemyShip(x:Number, y:Number):void
 		{
 	
-				var enemyShip:EnemyShipClass = new EnemyShipClass(stage.stageWidth * 0.2, stage.stageHeight * 0.5);
+				var enemyShip:EnemyShipClass = new EnemyShipClass(x,y, stage.stageWidth);
 				addChild(enemyShip.GetShip());
 				_enemyShips.push(enemyShip);
 			
@@ -148,15 +152,6 @@ package
 			updateEnemyShips(deltaTime);
 			updateLasers(deltaTime);
 			
-			if(_enemyKillCount > 1)
-			{
-				_poweredUp = true;
-			}
-			
-			if(_poweredUp)
-			{
-				//Do something cool
-			}
 		}
 		
 		private function updateShip(deltaTime:Number) : void
@@ -225,23 +220,20 @@ package
 				//build a swept rectangle
 				
 				laserRect = laserRect.union(laser.getRect(this));
-				
-//				for (var j:int = _enemyShips.length-1; j >=0; j--)
-//				{
-//					var enemyShip:EnemyShip = _enemyShips[j];
-//					if(enemyShip &&laserRect.intersects(enemyShip.getRect(this)))
-//					{
-//						//_explosion.x = enemyShip.x;
-//						//_explosion.y = enemyShip.y;
-//						//_explosionSound.play();
-//						//addChild(_explosion);	
-//						//_explosionFrame = 0;
-//						removeChild(enemyShip);
-//						_enemyShips.splice(j, 1);
-//						_enemyKillCount++;
-//						enemyShip = null;
-//					}
-//				}
+	
+
+				for (var j:int = _enemyShips.length-1; j >=0; j--)
+				{
+					var enemyShip:EnemyShipClass = _enemyShips[j];
+					if(!enemyShip.IsExploding() && enemyShip.HitByLaser(laserRect))
+					{
+						addChild(enemyShip.GetExplosion());
+						enemyShip.GetShip().visible = false;
+						_enemyKillCount++;
+					
+					}
+					
+				}
 				//remove laser from display list 
 				if(laser.y< -laser.height)
 				{
@@ -254,31 +246,19 @@ package
 
 		private function updateEnemyShips(deltaTime:Number) : void 
 		{
-//			for(var i:int = 0; i < _enemyShips.length; i++)
-//			{
-//				if(_enemyShips[i])
-//				{
-//				
-//					var speed:Number = stage.stageWidth * ENEMY_SPEED_PERCENT;
-//					_enemyShips[i].x +=speed * deltaTime;
-//				}
-//				
-//				else if(_explosion.parent)
-//				{
-//					_explosionFrame += 60 * deltaTime;
-//					if(int(_explosionFrame) > _explosion.totalFrames)
-//					{
-//						_explosion.stop();
-//						removeChild(_explosion);
-//						_explosion.goToAndStop(1);
-//	
-//					}	
-//					else
-//					{
-//						_explosion.gotoAndStop(int(_explosionFrame));
-//					}
-//				}
-//			}
+			
+			for(var i:int = 0; i < _enemyShips.length; i++)
+			{
+				if(_enemyShips[i].IsDead())
+				{
+					removeChild(_enemyShips[i].GetShip());
+					removeChild(_enemyShips[i].GetExplosion());
+					_enemyShips.splice(i, 1)
+					continue;
+				}
+				_enemyShips[i].Update(deltaTime);
+			}
+
 		}
 		
 	}
