@@ -24,15 +24,17 @@ package
 	{
 		private static const SHIP_SPEED_PERCENT:Number = 0.75; // Screen width percent per second
 	
-		private static const LASER_COOLDOWN : Number = .3;
+		private static const LASER_COOLDOWN : Number = 10;
 		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _initialWidth : int;
 		
 		private var _playerShip:PlayerShip;
 		private var _playerHitSound:PlayerHitSound;
+		private var _playerHealth:Number = 100;
+		private var _playerExplosion:Explosion;
 		
 		private var _enemyShips:Vector.<EnemyShipClass>;
-		private var _numShips:int = 10;
+		private var _numShips:int = 2;
 		private var _numShipsToSpawn:int = 2;
 		private var _maxShips:int = _numShips *2;
 		private var _minShips:int = _numShips * 0.3;
@@ -96,10 +98,12 @@ package
 			_enemyShips = new <EnemyShipClass> [];
 			for(var i:int = 0; i < _numShips; i++)
 			{
-				createEnemyShip(stage.stageWidth * (1/_numShips) * i, 100 + i*_playerShip.height * .2);
+				createEnemyShip(stage.stageWidth * Math.random(), 100 + i*_playerShip.height * .2);
 			}
 			
 			_starField = new StarField();
+			_playerExplosion = new Explosion();
+			
 			addChild(_starField);
 			addChild(_playerShip);
 		
@@ -130,8 +134,8 @@ package
 		
 				addChild(enemyShip.GetShip());
 				addChild(enemyShip.GetLaser());
-				_enemyShips.push(enemyShip);
-				//addChild(new EnemyLaser());
+			    _enemyShips.push(enemyShip);
+
 			
 		}
 		
@@ -210,14 +214,24 @@ package
 					var enemyShip:EnemyShipClass = _enemyShips[j];
 					var enemyLaserRect:Rectangle = enemyShip.GetLaser().getRect(this);
 					
-					//Check if player is hit by enemy
+					//Check if player is hit by enemy ****PLAYER HIT
 					if(_playerShip.getRect(this).intersects(enemyLaserRect))
 					{
-						trace("BOOOM:   "   + deltaTime);
+						
 						_playerHitSound.play();
+						_playerHealth--;
+			
+						trace(_playerHealth)
+						if(_playerHealth <= 90)
+						{
+							_playerExplosion.x = _playerShip.x;
+							_playerExplosion.y = _playerShip.y;
+							_playerShip.visible = false;
+							addChild(_playerExplosion);
+						}
 						if(enemyShip.GetLaser().parent)
 						{
-							removeChild(enemyShip.GetLaser());
+							enemyShip.GetLaser().visible = false;
 						}
 							
 					}

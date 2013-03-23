@@ -22,6 +22,7 @@ package ssg
 		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _laserShootFuse: Number;
 		private var _laserSpeed:Number;
+
 		
 		public function EnemyShipClass(x:Number, y:Number, stageWidth:Number, stageHeight:Number)
 		{
@@ -88,6 +89,8 @@ package ssg
 			if(_enemyLaser.y > _stageHeight)
 			{
 				_enemyLaser.y = _enemyShip.y + _enemyShip.height*0.5;
+				_enemyLaser.x = _enemyShip.x;
+				_enemyLaser.visible = true;
 			}
 		}
 		
