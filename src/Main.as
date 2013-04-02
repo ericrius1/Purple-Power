@@ -23,18 +23,23 @@ package
 	public class Main extends Sprite
 	{
 		private static const SHIP_SPEED_PERCENT:Number = 0.75; // Screen width percent per second
-	
-		private static const LASER_COOLDOWN : Number = 10;
+		private static const ORIGINAL_LASER_COOLDOWN:Number = .4;
+		private var LASER_COOLDOWN : Number = ORIGINAL_LASER_COOLDOWN;
 		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _initialWidth : int;
-		
 		private var _playerShip:PlayerShip;
 		private var _playerHitSound:PlayerHitSound;
 		private var _playerHealth:Number = 100;
+		private var _isDead:Boolean = false;
+		private var _numLives:int = 3;
+		private var _isPoweredUp:Boolean = false;
+		
 		private var _playerExplosion:Explosion;
+		private var _playerIsExploding:Boolean = false;
+		private var _explosionFrame:int = 0;
 		
 		private var _enemyShips:Vector.<EnemyShipClass>;
-		private var _numShips:int = 2;
+		private var _numShips:int = 20;
 		private var _numShipsToSpawn:int = 2;
 		private var _maxShips:int = _numShips *2;
 		private var _minShips:int = _numShips * 0.3;
@@ -135,8 +140,6 @@ package
 				addChild(enemyShip.GetShip());
 				addChild(enemyShip.GetLaser());
 			    _enemyShips.push(enemyShip);
-
-			
 		}
 		
 		private function onMouseDown(event:MouseEvent) : void
@@ -145,8 +148,6 @@ package
 			stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
 			_mouseDown = true;
 		}
-		
-
 		
 		private function onMouseUp(event:MouseEvent) : void
 		{
@@ -167,16 +168,22 @@ package
 		
 		private function update (deltaTime:Number): void
 		{
-			updateShip(deltaTime);
 			_starField.update(deltaTime);
 			if(!_bossMode)
 				updateEnemyShips(deltaTime);
 			else
 				updateBoss(deltaTime);
 			updateLasers(deltaTime);
+			if(_playerIsExploding)
+			{
+				UpdatePlayerExplosion(deltaTime);
+			}
 			
-		}
+			if(_isDead)
+				return;
+			updateShip(deltaTime);
 		
+		}
 		private function updateShip(deltaTime:Number) : void
 		{
 			
@@ -222,13 +229,7 @@ package
 						_playerHealth--;
 			
 						trace(_playerHealth)
-						if(_playerHealth <= 90)
-						{
-							_playerExplosion.x = _playerShip.x;
-							_playerExplosion.y = _playerShip.y;
-							_playerShip.visible = false;
-							addChild(_playerExplosion);
-						}
+						
 						if(enemyShip.GetLaser().parent)
 						{
 							enemyShip.GetLaser().visible = false;
@@ -236,15 +237,25 @@ package
 							
 					}
 				}
+				
+				if(_playerHealth <= 0)
+				{
+					_playerExplosion.x = _playerShip.x;
+					_playerExplosion.y = _playerShip.y;
+					_playerShip.visible = false;
+					_playerIsExploding = true;
+					_isDead= true;
+					
+					addChild(_playerExplosion);
+				}
+				
 		}
-	
-		
 		private function updateLasers(deltaTime:Number) : void
 		{
 			var laser:Laser;
 			
 			_laserShootFuse -= deltaTime;
-			while ( _laserShootFuse <=0)
+			while ( _laserShootFuse <=0 && !_isDead)
 			{
 				_laserShootFuse += LASER_COOLDOWN;
 				
@@ -289,6 +300,8 @@ package
 						enemyShip.GetShip().visible = false;
 						enemyShip.GetLaser().visible = false;
 						_enemyKillCount++;
+						if( !_isPoweredUp && _enemyKillCount>25)
+							PowerUp();
 					}
 				}
 				//remove laser from display list 
@@ -299,6 +312,13 @@ package
 					continue;
 				}	
 			}
+		}
+		
+		private function PowerUp():void
+		{
+			LASER_COOLDOWN  = LASER_COOLDOWN * 0.25;
+			_isPoweredUp = true;
+			
 		}
 		
 		private function SpawnBoss():void
@@ -316,6 +336,38 @@ package
 			}
 			_bossShip.Update(deltaTime);
 			
+		}
+		
+		private function UpdatePlayerExplosion(deltaTime:Number):void
+		{
+			_explosionFrame += 60 * deltaTime;
+			
+			if(int(_explosionFrame) > _playerExplosion.totalFrames)
+			{
+				_playerExplosion.stop();
+				_playerIsExploding = false;
+				removeChild(_playerExplosion);
+				_numLives--;
+				if(_numLives >=0){
+					PlayerRespawn();
+				}
+				
+			}	
+			else
+			{
+				_playerExplosion.gotoAndStop(int(_explosionFrame));
+			}
+			return;
+		}
+		
+		private function PlayerRespawn():void
+		{
+			_playerHealth = 100;
+			_playerShip.visible = true;
+			_isDead = false;
+			_isPoweredUp = false;
+			_enemyKillCount = 0;
+			LASER_COOLDOWN = ORIGINAL_LASER_COOLDOWN;
 		}
 
 		private function updateEnemyShips(deltaTime:Number) : void 

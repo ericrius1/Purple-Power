@@ -18,7 +18,7 @@ package ssg
 	    private var _isExploding:Boolean = false;
 		private var _isDead:Boolean = false;
 		private var _enemyLaser:EnemyLaser;
-		private static const LASER_COOLDOWN : Number = .3;
+		private static const LASER_COOLDOWN : Number = 1.9;
 		private static const LASER_SPEED_PERCENT:Number = 1.0; //traverse 4 screens in one second
 		private var _laserShootFuse: Number;
 		private var _laserSpeed:Number;
